@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport locked to prevent accidental pinch-zoom/scrolling issues on mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Raghav Protocol | Season Review</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;700&family=Oswald:wght@400;700&family=Outfit:wght@300;500;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#0F0F0F',
+                        brandBeige: '#D6C0B3',
+                        brandBrown: '#8B6F5A',
+                        brandLight: '#F5E6D3',
+                        brandNeon: '#39FF14',
+                        fifaGold: '#E6C972',
+                        pastelPink: '#ffd1dc',
+                        toxicGreen: '#00ff00',
+                    },
+                    fontFamily: {
+                        anton: ['Anton', 'sans-serif'],
+                        bebas: ['Bebas Neue', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['Space Mono', 'monospace'],
+                        caveat: ['Caveat', 'cursive'],
+                        oswald: ['Oswald', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'spin-slow': 'spin 8s linear infinite',
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1.5s ease-in-out infinite',
+                        'float': 'float 4s ease-in-out infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                    },
+                    keyframes: {
+                        wiggle: {
+                            '0%, 100%': { transform: 'rotate(-3deg)' },
+                            '50%': { transform: 'rotate(3deg)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Locking body scroll for the app-like flow */
+        body {
+            background-color: #0F0F0F;
+            color: #F5E6D3;
+            overflow: hidden; /* Prevents global scrolling */
+            transition: background-color 1s ease, color 1s ease;
+        }
+
+        /* Hide scrollbar but keep functionality for internal scrolling */
+        ::-webkit-scrollbar { width: 4px; background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+        /* --- PAGE FLOW ARCHITECTURE --- */
+        .page-section {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            visibility: hidden;
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none; /* Prevents hidden pages from blocking clicks */
+            -webkit-overflow-scrolling: touch; 
+        }
+        .page-section.active {
+            z-index: 10;
+            pointer-events: auto; /* Re-enable clicks when active */
+        }
+
+        /* Navigation Bar */
+        #page-nav {
+            background: rgba(15, 15, 15, 0.90);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: env(safe-area-inset-bottom); /* iOS safe area */
+        }
+
+        /* Draggable Sticky Notes */
+        .sticky-note {
+            background: #fef08a;
+            color: #1f2937;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,255,255,0.5);
+            border-bottom-right-radius: 20px 5px;
+            position: absolute;
+            z-index: 50;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+            cursor: grab;
+            user-select: none;
+            padding: 15px;
+            font-family: 'Caveat', cursive;
+            font-size: 1.3rem;
+            line-height: 1.2;
+            transform: rotate(-2deg);
+        }
+        .sticky-note:active { cursor: grabbing; box-shadow: 5px 10px 20px rgba(0,0,0,0.6); z-index: 100;}
+        .sticky-pin {
+            width: 12px; height: 12px;
+            background: #ef4444; border-radius: 50%;
+            position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        /* Click Particles */
+        .click-particle {
+            position: fixed; pointer-events: none; z-index: 9999;
+            animation: float-particle 1s ease-out forwards;
+            font-size: 1.5rem; text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        @keyframes float-particle {
+            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.5) rotate(20deg); opacity: 0; }
+        }
+
+        /* Food Rain */
+        .food-item {
+            position: fixed; pointer-events: none; z-index: 9998;
+            font-size: 3rem;
+            animation: fall linear forwards;
+            filter: drop-shadow(0 0 10px rgba(255,165,0,0.5));
+        }
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(720deg); }
+        }
+
+        /* CRT Effects */
+        .crt::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 3px; z-index: 9999; pointer-events: none; opacity: 0.25;
+        }
+
+        /* Glitch effects */
+        .glitch-text { position: relative; }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: transparent;
+        }
+        .glitch-text::before { left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+        .glitch-text::after { left: -2px; text-shadow: -1px 0 #39FF14; clip: rect(85px, 550px, 140px, 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
+
+        @keyframes glitch-anim { 0% { clip: rect(10px, 9999px, 86px, 0); } 100% { clip: rect(61px, 9999px, 12px, 0); } }
+        @keyframes glitch-anim-2 { 0% { clip: rect(29px, 9999px, 83px, 0); } 100% { clip: rect(80px, 9999px, 20px, 0); } }
+
+        /* Popups */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 10000; display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s;
+        }
+        .popup-overlay.active { opacity: 1; visibility: visible; }
+        .popup-content { transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .popup-overlay.active .popup-content { transform: scale(1); }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+
+        /* Scrapbook Final Letter Theme */
+        .scrapbook-tape {
+            position: absolute; width: 120px; height: 35px; background-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: rotate(-4deg); top: -15px; left: 50%; margin-left: -60px;
+            backdrop-filter: blur(2px);
+        }
+        
+        .fade-text { opacity: 0; transform: translateY(30px); transition: opacity 1.2s ease-out, transform 1.2s ease-out; }
+        .fade-text.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+
+<body class="crt antialiased selection:bg-brandNeon selection:text-black">
+
+    <div id="boot-screen" class="fixed inset-0 z-[100] bg-black flex flex-col justify-center px-6 md:px-24 font-mono text-brandNeon">
+        <div class="max-w-3xl w-full mx-auto">
+            <h1 class="text-3xl md:text-5xl font-bold mb-8 tracking-tighter">RAGHAV_OS_v3.0</h1>
+            <div id="boot-logs" class="text-xs md:text-sm space-y-2 mb-8 h-48 overflow-hidden opacity-80 border-l-2 border-brandNeon/30 pl-4">
+                <!-- Logs injected via JS -->
+            </div>
+            <div class="w-full bg-gray-900 h-1 rounded overflow-hidden mb-8">
+                <div id="loading-bar" class="h-full bg-brandNeon w-0 shadow-[0_0_10px_#39FF14]"></div>
+            </div>
+            <button id="enter-btn" class="hidden w-full md:w-auto px-8 py-4 bg-brandNeon text-black font-bold tracking-widest hover:bg-white hover:shadow-[0_0_25px_#ffffff] transition-all duration-300 rounded shadow-[0_0_15px_#39FF14]">
+                [ INITIATE CHAOS ]
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main id="main-content" class="hidden w-full h-full relative">
+
+        <!-- GLOBAL ELEMENTS -->
+        <button id="food-btn" class="fixed top-6 right-4 md:right-8 z-50 bg-orange-500 text-black font-bold font-mono px-4 py-2 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.6)] hover:scale-110 hover:bg-orange-400 transition-all border-2 border-orange-700 text-sm md:text-base">
+            🍗 Feed Raghav
+        </button>
+
+        <section id="page-0" class="page-section">
+            <div class="min-h-[100vh] w-full flex flex-col items-center justify-center text-center px-4 pb-32 relative">
+                <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center text-5xl md:text-7xl">
+                    <div class="absolute top-1/4 left-1/4 animate-float">🤡</div>
+                    <div class="absolute bottom-1/4 right-1/4 animate-float" style="animation-delay: 1s;">🍗</div>
+                    <div class="absolute top-1/3 right-1/3 animate-float" style="animation-delay: 2s;">⚽</div>
+                    <div class="absolute bottom-1/3 left-1/3 animate-float" style="animation-delay: 1.5s;">🙄</div>
+                </div>
+
+                <div class="z-10 w-full max-w-5xl relative mt-20 md:mt-0">
+                    <div class="inline-block border border-brandNeon/50 text-brandNeon px-4 py-1 rounded-full text-xs md:text-sm font-mono tracking-widest mb-6 bg-brandNeon/5 backdrop-blur-sm shadow-[0_0_10px_rgba(57,255,20,0.2)] animate-pulse">
+                        ANNUAL SURVIVAL REPORT
+                    </div>
+                    
+                    <h1 class="font-oswald font-bold text-6xl md:text-[10rem] leading-none tracking-tighter mb-4 text-white relative group cursor-default">
+                        <span class="absolute inset-0 text-brandNeon blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-700">RAGHAV WRAPPED</span>
+                        <span class="relative z-10 glitch-text" data-text="RAGHAV WRAPPED">RAGHAV WRAPPED</span>
+                    </h1>
+                    
+                    <p class="font-outfit text-lg md:text-3xl text-brandBeige mb-4 font-light px-4">Celebrating another year of being a professional nuisance.</p>
+                    <p class="font-mono text-xs md:text-sm text-gray-500 mb-12">Certified headache since 2023.</p>
+
+                    <div class="flex flex-col items-center justify-center mt-8 relative">
+                        <div id="candle-flame" class="w-6 h-10 bg-yellow-400 rounded-full blur-[2px] animate-pulse cursor-pointer shadow-[0_0_30px_#facc15] mb-2 transition-all duration-500 hover:scale-125 z-20"></div>
+                        <div class="w-4 h-16 bg-white rounded-t-md border border-gray-300 relative z-10">
+                            <div class="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,#ff0000_5px,#ff0000_10px)]"></div>
+                        </div>
+                        <p id="candle-text" class="text-xs font-mono mt-4 text-gray-400 transition-colors duration-300">Tap flame to make a birthday wish</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-1" class="page-section">
+            <div class="min-h-[100vh] w-full flex flex-col md:flex-row items-center justify-center px-4 relative pt-24 md:pt-0 pb-32">
+                <div class="sticky-note animate-wiggle hidden md:block" style="top: 15%; right: 15%; cursor: pointer;" title="Double click me!">
+                    <div class="sticky-pin"></div>
+                    "Stats are definitely bought."<br><span class="text-sm text-gray-500">- Anshita</span>
+                </div>
+
+                <div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center mx-auto">
+                    <div class="w-full max-w-sm mx-auto">
+                        <div id="fifa-card" class="relative w-full aspect-[2.5/3.5] bg-gradient-to-br from-[#1a1a1a] to-[#050505] rounded-3xl border-2 border-fifaGold/40 shadow-[0_0_40px_rgba(230,201,114,0.15)] p-6 flex flex-col items-center justify-between overflow-hidden cursor-crosshair transition-transform duration-100">
+                            
+                            <div id="card-glare" class="absolute inset-0 bg-gradient-to-tr from-transparent via-white to-transparent opacity-0 pointer-events-none z-20"></div>
+                            
+                            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_0%,_#E6C972_0%,_transparent_70%)] pointer-events-none"></div>
+                            <div class="w-full flex justify-between items-start z-10 font-bebas">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-6xl text-fifaGold leading-none shadow-black drop-shadow-lg">99</span>
+                                    <span class="text-xl tracking-widest text-gray-300">OVR</span>
+                                </div>
+                                <div class="flex flex-col items-end text-fifaGold text-sm">
+                                    <span>POS: RAGE QUITTER</span>
+                                    <span>CLUB: FC DELUSION</span>
+                                </div>
+                            </div>
+
+                            <div class="w-48 h-48 bg-black/60 border-2 border-brandNeon/50 rounded-full flex items-center justify-center z-10 relative overflow-hidden group/img shadow-[inset_0_0_20px_rgba(57,255,20,0.2)]">
+                                <div class="absolute inset-0 bg-brandNeon/20 translate-y-full group-hover/img:translate-y-0 transition-transform duration-500 ease-out"></div>
+                                <span class="text-[5rem] group-hover/img:scale-125 transition-transform duration-500 ease-out drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">🤡</span>
+                            </div>
+
+                            <h2 class="font-anton text-5xl tracking-widest uppercase text-white mt-4 z-10 shadow-black drop-shadow-md">RAGHAV</h2>
+
+                            <div class="w-full grid grid-cols-2 gap-x-6 gap-y-2 mt-4 text-sm font-mono z-10 border-t border-fifaGold/30 pt-4">
+                                <div class="flex justify-between"><span class="text-gray-400">YAPPING</span> <span class="text-brandNeon font-bold text-lg">99</span></div>
+                                <div class="flex justify-between" id="flirt-stat" style="cursor:help;" title="Click for the truth"><span class="text-gray-400 border-b border-dashed border-gray-500">LOVE</span> <span class="text-pink-500 font-bold text-lg">100</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">CHICKEN</span> <span class="text-orange-400 font-bold text-lg">98</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">LISTENING</span> <span class="text-red-600 font-bold text-lg">04</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">FIFA SKILL</span> <span class="text-gray-600 font-bold text-lg line-through">12</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">ANNOYING</span> <span class="text-brandNeon font-bold text-lg">100</span></div>
+                            </div>
+                        </div>
+                        
+                        <button id="delusion-scanner-btn" class="w-full mt-6 py-4 bg-brandNeon/10 border border-brandNeon text-brandNeon font-mono text-sm tracking-widest hover:bg-brandNeon hover:text-black transition-all duration-300 rounded shadow-[0_0_15px_rgba(57,255,20,0.2)]">
+                            [ SCAN DELUSION LEVELS ]
+                        </button>
+                    </div>
+
+                    <div class="space-y-8 mt-12 md:mt-0">
+                        <h2 class="font-outfit font-black text-4xl md:text-6xl text-white tracking-tight">SCOUTING REPORT</h2>
+                        <div class="space-y-6 font-mono text-gray-300">
+                            <div class="border-l-4 border-brandNeon pl-4 bg-white/5 p-5 rounded-r-xl transition-all hover:bg-white/10">
+                                <h3 class="text-brandLight font-bold mb-2 tracking-widest text-sm">STRENGTHS</h3>
+                                <p class="text-sm leading-relaxed">Professionally irritating. Can start an argument out of thin air. High stamina for eating junk food.</p>
+                            </div>
+                            <div class="border-l-4 border-red-500 pl-4 bg-white/5 p-5 rounded-r-xl transition-all hover:bg-white/10">
+                                <h3 class="text-brandLight font-bold mb-2 tracking-widest text-sm">WEAKNESSES</h3>
+                                <p class="text-sm leading-relaxed">Severe skill issue in FIFA. Cannot survive Anshita's physical assaults. Listening ability is in negative.</p>
+                            </div>
+                            <div class="border-l-4 border-fifaGold pl-4 bg-white/5 p-5 rounded-r-xl transition-all hover:bg-white/10">
+                                <h3 class="text-brandLight font-bold mb-2 tracking-widest text-sm">SPECIAL ABILITY</h3>
+                                <p class="text-sm leading-relaxed">"The Innocent Giggle" - Deployed immediately after successfully annoying Anshita to avoid consequences.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-2" class="page-section">
+            <div class="min-h-[100vh] w-full flex flex-col items-center justify-center px-4 relative pb-32">
+                <div class="max-w-4xl w-full mx-auto text-center relative mt-10 md:mt-0">
+                    <div class="sticky-note hidden md:block" style="top: -60px; left: -20px; transform: rotate(6deg);">
+                        <div class="sticky-pin"></div>
+                        Stop hitting me! 🩹<br><span class="text-sm text-gray-600">- being victim</span>
+                    </div>
+
+                    <h2 class="font-bebas text-6xl md:text-[5rem] mb-12 text-red-500 glitch-text drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]" data-text="COMBAT RECORD">COMBAT RECORD</h2>
+                    
+                    <div class="glass-panel p-6 md:p-10 rounded-3xl border border-red-500/30 relative overflow-hidden shadow-2xl">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 text-8xl">🥊</div>
+                        
+                        <h3 class="font-mono text-xl md:text-2xl mb-6 text-gray-300">Raghav's Health vs Anshita</h3>
+                        
+                        <div class="w-full h-12 bg-gray-900 rounded-full overflow-hidden border-2 border-gray-700 mb-8 relative shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+                            <div id="health-bar-fill" class="h-full bg-gradient-to-r from-red-600 via-orange-500 to-green-500 w-[80%] transition-all duration-500 ease-out"></div>
+                            <span id="health-text" class="absolute inset-0 flex items-center justify-center font-mono text-xl font-bold shadow-black drop-shadow-md text-white tracking-widest">80 / 100 HP</span>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row gap-4 justify-center w-full z-10 relative">
+                            <button id="damage-btn" class="px-8 py-4 bg-red-900/40 border border-red-500 text-red-400 font-mono font-bold hover:bg-red-600 hover:text-white transition-all rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] w-full md:w-auto hover:scale-105 active:scale-95">
+                                [ INFLICT DAMAGE 👊 ]
+                            </button>
+                            <button id="heal-btn" class="px-8 py-4 bg-pink-900/40 border border-pink-500 text-pink-400 font-mono font-bold hover:bg-pink-600 hover:text-white transition-all rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.3)] w-full md:w-auto hover:scale-105 active:scale-95">
+                                [ HEAL WITH A KISS 😘 ]
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-8 font-mono">Warning: Triggers "Shinchan Giggle" defense mechanism.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-3" class="page-section">
+            <div class="min-h-[100vh] w-full flex flex-col items-center justify-center px-4 pb-32">
+                <div class="sticky-note hidden lg:block animate-wiggle" style="top: 15%; right: 10%; transform: rotate(-5deg);">
+                    <div class="sticky-pin"></div>
+                    "The ref is biased against me!"<br>- Raghav, every time 🙄
+                </div>
+
+                <h2 class="font-bebas text-5xl md:text-[5rem] mb-4 text-white mt-10 md:mt-0 tracking-tight">OFFICIAL <span class="text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">VAR</span> REVIEW</h2>
+                <p class="font-mono text-gray-400 mb-10 text-center max-w-xl text-sm md:text-base">Analyzing recent football debates and relationship arguments for factual accuracy.</p>
+                
+                <div class="w-full max-w-4xl aspect-video bg-[#050505] border-4 border-gray-800 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)] relative overflow-hidden flex flex-col items-center justify-center">
+                    <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none z-30"></div>
+                    <div class="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,1)] pointer-events-none z-30"></div>
+                    
+                    <div id="var-screen" class="text-center z-10 w-full px-8">
+                        <h3 class="font-outfit text-4xl text-gray-600 mb-8 tracking-widest font-bold">SYSTEM IDLE</h3>
+                        <button id="start-var-btn" class="px-8 py-4 bg-blue-600/20 text-blue-400 font-mono font-bold hover:bg-blue-600 hover:text-white transition-all border border-blue-500 rounded shadow-[0_0_20px_rgba(37,99,235,0.3)] tracking-widest hover:scale-105">
+                            [ REVIEW LAST ARGUMENT ]
+                        </button>
+                    </div>
+
+                    <div id="var-processing" class="hidden text-center z-10 font-mono w-full px-12">
+                        <div class="w-20 h-20 border-4 border-blue-500 border-t-transparent border-l-transparent rounded-full animate-spin mx-auto mb-8 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                        <p id="var-status-text" class="text-xl md:text-2xl text-blue-400 tracking-widest mb-2 font-bold glitch-text" data-text="ANALYZING TEXTS...">ANALYZING TEXTS...</p>
+                        <p id="var-sub-text" class="text-xs text-gray-500 mb-6 h-4">Checking logic parameters...</p>
+                        <div class="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-700">
+                            <div id="var-progress" class="h-full bg-blue-500 w-0 transition-all duration-[4000ms] ease-linear shadow-[0_0_10px_#3b82f6]"></div>
+                        </div>
+                    </div>
+
+                    <div id="var-result" class="hidden absolute inset-0 bg-red-600 z-20 flex flex-col items-center justify-center">
+                        <h2 class="font-bebas text-7xl text-white tracking-widest mb-4 opacity-80">DECISION</h2>
+                        <h1 class="font-anton text-5xl md:text-7xl text-black bg-white px-8 py-3 uppercase text-center mx-4 shadow-2xl transform -rotate-2">RAGHAV IS WRONG</h1>
+                        <p class="font-mono text-white mt-8 font-bold text-xl md:text-2xl tracking-widest text-center bg-black/30 px-6 py-2 rounded">PENALTY TO ANSHITA.</p>
+                        <button id="reset-var-btn" class="mt-12 px-6 py-3 border-2 border-white/50 text-white font-mono text-sm hover:bg-white hover:text-red-600 transition-colors rounded tracking-widest">RUN ANOTHER REVIEW</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-4" class="page-section">
+            <div class="min-h-[100vh] w-full max-w-5xl mx-auto px-6 relative pt-32 pb-40">
+                <h2 class="font-bebas text-6xl md:text-[5rem] mb-24 text-center text-white tracking-tight">THE ARCHIVES</h2>
+                
+                <div class="absolute left-6 md:left-1/2 top-48 bottom-20 w-1 bg-gradient-to-b from-brandNeon via-gray-700 to-brandBeige md:-translate-x-1/2 rounded-full opacity-50"></div>
+
+                <div class="flex flex-col md:flex-row items-center justify-between mb-32 w-full relative group">
+                    <div class="w-full md:w-[45%] md:text-right pl-12 md:pl-0 md:pr-10 mb-6 md:mb-0">
+                        <h3 class="font-bebas text-4xl md:text-5xl text-brandNeon mb-2 tracking-wide group-hover:scale-105 transition-transform transform origin-right">2023: THE ENCOUNTER</h3>
+                        <p class="font-mono text-sm md:text-base text-gray-400">First impressions: "Who is this annoying guy?" Honestly, I thought you were normal. I was heavily scammed.</p>
+                    </div>
+                    <div class="w-6 h-6 bg-brandNeon rounded-full absolute left-3 md:left-1/2 md:-translate-x-1/2 shadow-[0_0_15px_#39FF14] z-10 border-4 border-[#0F0F0F]"></div>
+                    <div class="w-full md:w-[45%] pl-12 md:pl-10">
+                        <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-40 md:h-48 border-brandNeon/30 hover:border-brandNeon transition-colors bg-brandNeon/5">
+                            <span class="text-5xl md:text-6xl mb-3">🤝</span>
+                            <span class="font-caveat text-brandNeon text-xl md:text-2xl">Mistakes were made.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row-reverse items-center justify-between mb-32 w-full relative group">
+                    <div class="w-full md:w-[45%] pl-12 md:pl-10 mb-6 md:mb-0 text-left">
+                        <h3 class="font-bebas text-4xl md:text-5xl text-fifaGold mb-2 tracking-wide group-hover:scale-105 transition-transform transform origin-left">THE CHAOS ERA</h3>
+                        <p class="font-mono text-sm md:text-base text-gray-400">Endless arguments, debates, and professional ragebaiting. We established fighting as our baseline communication.</p>
+                    </div>
+                    <div class="w-6 h-6 bg-fifaGold rounded-full absolute left-3 md:left-1/2 md:-translate-x-1/2 shadow-[0_0_15px_#E6C972] z-10 border-4 border-[#0F0F0F]"></div>
+                    <div class="w-full md:w-[45%] pl-12 md:pl-0 md:pr-10">
+                         <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-40 md:h-48 border-fifaGold/30 hover:border-fifaGold transition-colors bg-fifaGold/5">
+                            <span class="text-5xl md:text-6xl mb-3">🗣️</span>
+                            <span class="font-caveat text-fifaGold text-xl md:text-2xl">Daily headaches started here.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-between mb-32 w-full relative group opacity-60 hover:opacity-100 transition-opacity">
+                    <div class="w-full md:w-[45%] md:text-right pl-12 md:pl-0 md:pr-10 mb-6 md:mb-0">
+                        <h3 class="font-outfit font-black text-3xl md:text-4xl text-gray-500 mb-2 tracking-tight">THE SILENCE</h3>
+                        <p class="font-mono text-sm md:text-base text-gray-500">At some point, the jokes stopped. The silence was loud. Two stubborn idiots just... existed without each other.</p>
+                    </div>
+                    <div class="w-4 h-4 bg-gray-600 rounded-full absolute left-4 md:left-1/2 md:-translate-x-1/2 z-10 border-2 border-[#0F0F0F]"></div>
+                    <div class="w-full md:w-[45%] pl-12 md:pl-10">
+                        <div class="h-40 md:h-48 bg-transparent border-2 border-dashed border-gray-800 rounded-xl flex items-center justify-center text-4xl grayscale">
+                            🔇
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row-reverse items-center justify-between w-full relative group">
+                    <div class="w-full md:w-[45%] pl-12 md:pl-10 mb-6 md:mb-0 text-left">
+                        <h3 class="font-caveat text-5xl md:text-6xl text-brandBeige mb-2 font-bold">The Return</h3>
+                        <p class="font-mono text-sm md:text-base text-gray-400">No dramatic movie apology. Just us slowly realizing we are the exact same kind of stupid. Back to square one, but better.</p>
+                    </div>
+                    <div class="w-6 h-6 bg-brandBeige rounded-full absolute left-3 md:left-1/2 md:-translate-x-1/2 shadow-[0_0_15px_#D6C0B3] z-10 border-4 border-[#0F0F0F] animate-pulse"></div>
+                    <div class="w-full md:w-[45%] pl-12 md:pl-0 md:pr-10">
+                         <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-40 md:h-48 border-brandBeige/40 hover:border-brandBeige transition-colors bg-brandBeige/5 shadow-[0_0_20px_rgba(214,192,179,0.1)]">
+                            <span class="text-5xl md:text-6xl mb-3">🫂</span>
+                            <span class="font-caveat text-brandBeige text-xl md:text-2xl">Unfortunately stuck together.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-5" class="page-section">
+            <div class="min-h-[100vh] w-full flex items-center justify-center px-4 pt-20 pb-32">
+                <div class="max-w-5xl w-full mx-auto glass-panel p-6 md:p-14 rounded-3xl border border-gray-800 relative mt-10 md:mt-0 shadow-2xl bg-black/40 backdrop-blur-xl">
+                    
+                    <div class="sticky-note animate-wiggle hidden lg:block" style="top: -40px; right: -20px; transform: rotate(12deg);">
+                        <div class="sticky-pin"></div>
+                        Always excuses... 🙄<br><span class="text-sm">Never takes accountability.</span>
+                    </div>
+
+                    <div class="flex items-center justify-center md:justify-start gap-6 mb-12 border-b border-gray-800 pb-6">
+                        <i class="fas fa-fingerprint text-5xl text-gray-600 animate-pulse"></i>
+                        <div>
+                            <h2 class="font-mono text-2xl md:text-4xl font-bold tracking-widest text-gray-300">SUBJECT BEHAVIOR</h2>
+                            <p class="font-mono text-xs text-brandNeon mt-1">Status: Uncooperative & Childish</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <div class="bg-gray-900/80 p-8 rounded-2xl border border-gray-700 shadow-inner">
+                            <h3 class="font-bebas text-3xl text-brandLight mb-2 tracking-wide">AUTO-EXCUSE GENERATOR</h3>
+                            <p class="text-xs md:text-sm font-mono text-gray-500 mb-8 leading-relaxed">Subject frequently deploys these when caught ragebaiting or not listening.</p>
+                            
+                            <div id="excuse-display" class="w-full h-32 bg-black border border-gray-600 rounded-lg flex items-center justify-center p-6 text-center font-caveat text-2xl md:text-3xl text-brandBeige mb-8 shadow-[inset_0_0_20px_rgba(0,0,0,1)]">
+                                [ PULL LEVER TO GENERATE ]
+                            </div>
+                            
+                            <button id="generate-excuse-btn" class="w-full py-4 bg-gray-800 text-white font-mono font-bold tracking-widest hover:bg-gray-700 hover:text-brandNeon transition-all rounded-lg border border-gray-600 active:scale-95 shadow-lg">
+                                GENERATE SHINCHAN EXCUSE
+                            </button>
+                        </div>
+
+                        <div class="bg-gray-900/80 p-8 rounded-2xl border border-gray-700 relative overflow-hidden flex flex-col justify-center shadow-inner">
+                            <h3 class="font-bebas text-3xl text-brandLight mb-2 tracking-wide">LEGAL ADMISSION FORM</h3>
+                            <p class="text-xs md:text-sm font-mono text-gray-500 mb-8 leading-relaxed">Please verify facts below to proceed. Failure to check the box indicates massive ego.</p>
+                            
+                            <div class="mt-4 flex items-center gap-4 relative h-20 bg-black/50 p-4 rounded-lg border border-dashed border-gray-600">
+                                <input type="checkbox" id="impossible-checkbox" class="w-8 h-8 absolute transition-all duration-75 cursor-pointer z-10 accent-brandNeon">
+                                <label for="impossible-checkbox" class="font-mono text-sm md:text-lg text-white ml-12 select-none font-bold">I admit Anshita is always right.</label>
+                            </div>
+                            <p id="checkbox-taunt" class="text-sm font-mono text-brandNeon mt-6 opacity-0 transition-opacity text-center h-4">Nice try, your ego won't let you.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-6" class="page-section !bg-[#F4EBE1] !text-[#2c2c2c] transition-colors duration-1000">
+            <div class="absolute inset-0 bg-[#F4EBE1] z-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23d6c0b3\' fill-opacity=\'0.2\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E');"></div>
+
+            <div class="min-h-[100vh] w-full max-w-3xl mx-auto px-6 relative z-10 text-center font-caveat text-3xl md:text-5xl leading-relaxed text-gray-800 pt-40 pb-64">
+                
+                <div class="scrapbook-tape hidden md:block" style="top: 30px; left: 50%;"></div>
+                
+                <div class="absolute inset-0 opacity-30 pointer-events-none text-4xl fixed">
+                    <i class="fas fa-heart absolute top-1/4 left-[5%] md:left-[15%] text-pastelPink animate-float"></i>
+                    <i class="fas fa-star absolute top-1/2 right-[5%] md:right-[20%] text-yellow-500 animate-float" style="animation-delay: 1s"></i>
+                    <i class="fas fa-music absolute bottom-1/4 left-[10%] text-blue-300 animate-float" style="animation-delay: 2s"></i>
+                </div>
+
+                <p class="fade-text mb-40 pt-10">
+                    And somehow...
+                </p>
+
+                <p class="fade-text mb-40 text-4xl md:text-6xl">
+                    between all the arguments,<br>
+                    ragebaiting sessions,<br>
+                    and your stupid giggling after annoying me,
+                </p>
+
+                <p class="fade-text mb-40">
+                    and all the times I genuinely considered<br> throwing you out a window...
+                </p>
+
+                <p class="fade-text mb-40 text-red-600 font-bold text-5xl md:text-7xl drop-shadow-sm">
+                    you became really important to me.
+                </p>
+
+                <p class="fade-text mb-40 font-mono text-sm md:text-base text-gray-600 bg-white/60 inline-block p-6 rounded-xl shadow-md border border-gray-200">
+                    [ Not in some dramatic movie way. ]<br>
+                    Just quietly. Slowly. Naturally.
+                </p>
+
+                <p class="fade-text mb-40">
+                    Somewhere between 2023 and now,<br>
+                    you became a permanent fixture in my everyday life.
+                </p>
+
+                <p class="fade-text mb-40">
+                    And honestly, for someone who acts like an overgrown Shinchan most of the time...<br>
+                    <span class="text-4xl md:text-5xl">you’ve been there for me in ways you probably don’t even realize.</span>
+                </p>
+
+                <p class="fade-text mb-40 leading-loose">
+                    You’re annoying.<br>
+                    Childish.<br>
+                    Impossible to deal with sometimes.
+                </p>
+
+                <p class="fade-text mb-40 border-b-2 border-dashed border-gray-400 pb-6 inline-block font-bold">
+                    A professional headache, actually.
+                </p>
+
+                <p class="fade-text mb-64 text-4xl md:text-5xl">
+                    But you’re also one of the few people who can make<br> even the dumbest moments feel special.<br><br>
+                    And no matter how much we fight or irritate each other daily...<br>
+                    <span class="bg-yellow-200/50 px-2 rounded">I’m really glad we started talking again.</span><br>
+                    Because life genuinely felt a little off without you in it.
+                </p>
+
+                <div class="fade-text mt-20 relative inline-block w-full">
+                    <h2 class="font-bebas text-7xl md:text-[8rem] text-black mb-4 tracking-tighter leading-none">HAPPY BIRTHDAY<br><span class="text-red-600">RAGHAV</span></h2>
+                    <p class="font-mono text-sm md:text-lg text-gray-600 uppercase tracking-widest mb-16 mt-6 border-y border-gray-300 py-4 max-w-xl mx-auto">
+                        My football-obsessed, food-loving, ragebaiting, favorite headache.
+                    </p>
+                    
+                    <div class="font-caveat text-4xl md:text-6xl text-red-600 flex flex-col md:flex-row items-center justify-center gap-6">
+                        <span>Unfortunately stuck with you.</span>
+                        <i class="fas fa-heart animate-pulse text-5xl"></i>
+                    </div>
+                    <div class="text-xl mt-8 text-gray-500 font-sans tracking-wide">( at least for another year )</div>
+                    
+                    <div class="mt-20 flex justify-center">
+                        <button id="final-hug-btn" class="font-mono text-sm px-8 py-4 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition-all hover:scale-105 hover:shadow-xl active:scale-95 tracking-widest">
+                            SEND A VIRTUAL HUG 🫂
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="page-nav" class="fixed bottom-0 left-0 w-full z-50 flex items-center justify-between px-4 md:px-12 font-mono text-xs md:text-sm h-20 md:h-24">
+            <button id="prev-btn" class="px-4 md:px-6 py-3 border border-gray-600 rounded hover:bg-white hover:text-black transition-colors opacity-50 cursor-not-allowed uppercase flex items-center bg-black/50 backdrop-blur-md">
+                <i class="fas fa-chevron-left mr-2"></i> <span class="hidden md:inline">Prev</span>
+            </button>
+            
+            <div id="page-indicator" class="text-gray-400 tracking-widest font-bold bg-black/50 px-4 py-2 rounded backdrop-blur-md">
+                01 / 07
+            </div>
+            
+            <button id="next-btn" class="px-4 md:px-8 py-3 bg-brandNeon text-black font-bold rounded shadow-[0_0_15px_#39FF14] hover:bg-white hover:shadow-[0_0_25px_white] transition-all uppercase flex items-center tracking-widest">
+                <span class="mr-2 hidden md:inline">Next</span> <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <div id="global-popup" class="popup-overlay">
+            <div id="popup-container" class="popup-content p-8 md:p-10 rounded-3xl max-w-md w-[90%] mx-4 shadow-2xl relative overflow-hidden text-center border-2 border-transparent">
+                <div id="popup-icon" class="text-[5rem] mb-6 drop-shadow-lg">⚠️</div>
+                <h3 id="popup-title" class="font-bebas text-4xl mb-3 tracking-wider text-white drop-shadow-md">WARNING</h3>
+                <p id="popup-message" class="font-mono text-sm md:text-base text-gray-200 mb-8 leading-relaxed">Message goes here.</p>
+                <button id="popup-close" class="px-8 py-3 bg-white text-black font-mono font-bold text-sm md:text-base rounded hover:bg-gray-200 transition-colors tracking-widest w-full">ACKNOWLEDGE</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- AUDIO SYSTEM ---
+            let synth, varSynth, hitSynth;
+            function startAudioEngine() {
+                try {
+                    Tone.start();
+                    synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    synth.volume.value = -12;
+                    varSynth = new Tone.FMSynth().toDestination();
+                    varSynth.volume.value = -10;
+                    hitSynth = new Tone.MembraneSynth().toDestination();
+                    hitSynth.volume.value = -5;
+                } catch(e) { console.log("Audio disabled or blocked by browser policy."); }
+            }
+
+            // --- BOOT SEQUENCE ---
+            const bootLogs = [
+                "Initializing Raghav_OS_v3.0...",
+                "Bypassing security... wait, password was 'bhadwee'.",
+                "Scanning brain capacity... Error: Space occupied by football logic.",
+                "Loading Shinchan behavior module... Success.",
+                "WARNING: Delusion levels exceeding normal parameters.",
+                "System Ready. May God have mercy on Anshita."
+            ];
+            const logContainer = document.getElementById('boot-logs');
+            const loadingBar = document.getElementById('loading-bar');
+            const enterBtn = document.getElementById('enter-btn');
+            
+            let logDelay = 0;
+            bootLogs.forEach((log, index) => {
+                setTimeout(() => {
+                    const p = document.createElement('p');
+                    p.textContent = `> ${log}`;
+                    logContainer.appendChild(p);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                    
+                    gsap.to(loadingBar, { width: `${((index + 1) / bootLogs.length) * 100}%`, duration: 0.3 });
+                    
+                    if(index === bootLogs.length - 1) {
+                        setTimeout(() => {
+                            enterBtn.classList.remove('hidden');
+                            enterBtn.classList.add('animate-pulse');
+                        }, 600);
+                    }
+                }, logDelay);
+                logDelay += Math.random() * 500 + 400;
+            });
+
+            enterBtn.addEventListener('click', () => {
+                if(synth) synth.triggerAttackRelease(["C3", "E3", "G3"], "0.5");
+                gsap.to('#boot-screen', {
+                    y: '-100%', duration: 1.2, ease: "power4.inOut",
+                    onComplete: () => {
+                        document.getElementById('boot-screen').remove();
+                        document.getElementById('main-content').classList.remove('hidden');
+                        startAudioEngine();
+                        initPageFlow();
+                        startRandomPopups();
+                    }
+                });
+            });
+
+            // --- SPA PAGE FLOW LOGIC ---
+            const pages = document.querySelectorAll('.page-section');
+            const totalPages = pages.length;
+            let currentPage = 0;
+            let isAnimating = false;
+            
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const indicator = document.getElementById('page-indicator');
+
+            const bgColors = ['#0F0F0F', '#050505', '#1a0505', '#020617', '#111111', '#050505', '#F4EBE1'];
+
+            function updateNavUI() {
+                indicator.textContent = `0${currentPage + 1} / 0${totalPages}`;
+                document.body.style.backgroundColor = bgColors[currentPage];
+                
+                if (currentPage === 0) {
+                    prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    prevBtn.classList.remove('hover:bg-white', 'hover:text-black');
+                } else {
+                    prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    prevBtn.classList.add('hover:bg-white', 'hover:text-black');
+                }
+
+                const nextLabels = [
+                    "Scouting Report <i class='fas fa-chevron-right ml-2'></i>",
+                    "Survival Mode <i class='fas fa-gamepad ml-2'></i>",
+                    "VAR Check <i class='fas fa-video ml-2'></i>",
+                    "The Archives <i class='fas fa-folder-open ml-2'></i>",
+                    "Criminal Record <i class='fas fa-fingerprint ml-2'></i>",
+                    "Final Verdict <i class='fas fa-envelope ml-2'></i>",
+                    "Restart Protocol <i class='fas fa-undo ml-2'></i>"
+                ];
+                
+                if (currentPage === totalPages - 1) {
+                    nextBtn.innerHTML = nextLabels[currentPage];
+                    nextBtn.classList.replace('bg-brandNeon', 'bg-gray-800');
+                    nextBtn.classList.replace('text-black', 'text-white');
+                    nextBtn.style.boxShadow = 'none';
+                    document.body.classList.remove('crt');
+                    document.getElementById('page-nav').style.background = 'rgba(244, 235, 225, 0.9)';
+                    document.getElementById('page-nav').style.borderTop = '1px solid rgba(0,0,0,0.1)';
+                    indicator.classList.replace('bg-black/50', 'bg-white/50');
+                    indicator.classList.replace('text-gray-400', 'text-gray-600');
+                    prevBtn.classList.replace('bg-black/50', 'bg-white/50');
+                    prevBtn.classList.replace('text-white', 'text-black');
+                    prevBtn.classList.replace('border-gray-600', 'border-gray-300');
+                } else {
+                    nextBtn.innerHTML = nextLabels[currentPage];
+                    nextBtn.classList.replace('bg-gray-800', 'bg-brandNeon');
+                    nextBtn.classList.replace('text-white', 'text-black');
+                    nextBtn.style.boxShadow = '0 0 15px #39FF14';
+                    document.body.classList.add('crt');
+                    document.getElementById('page-nav').style.background = 'rgba(15, 15, 15, 0.90)';
+                    document.getElementById('page-nav').style.borderTop = '1px solid rgba(255, 255, 255, 0.05)';
+                    indicator.classList.replace('bg-white/50', 'bg-black/50');
+                    indicator.classList.replace('text-gray-600', 'text-gray-400');
+                    prevBtn.classList.replace('bg-white/50', 'bg-black/50');
+                    prevBtn.classList.replace('text-black', 'text-white');
+                    prevBtn.classList.replace('border-gray-300', 'border-gray-600');
+                }
+            }
+
+            function goToPage(index) {
+                if (isAnimating) return; 
+                if (index >= totalPages) index = 0; 
+                else if (index < 0) return;
+
+                isAnimating = true;
+                if(synth) synth.triggerAttackRelease("G4", "0.1");
+
+                const oldPage = pages[currentPage];
+                const newPage = pages[index];
+
+                gsap.set(newPage, { autoAlpha: 0, y: 30, scale: 0.98 });
+                newPage.classList.add('active');
+
+                gsap.to(oldPage, {
+                    autoAlpha: 0, y: -30, scale: 0.98, duration: 0.4, ease: "power2.inOut",
+                    onComplete: () => {
+                        oldPage.classList.remove('active');
+                        
+                        currentPage = index;
+                        updateNavUI();
+                        newPage.scrollTop = 0;
+
+                        gsap.to(newPage, {
+                            autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out",
+                            onComplete: () => {
+                                isAnimating = false;
+                                if(currentPage === totalPages - 1) {
+                                    checkIntersectionForFinalLetter();
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
+            prevBtn.addEventListener('click', () => { if(currentPage > 0) goToPage(currentPage - 1); });
+
+            function initPageFlow() {
+                pages[currentPage].classList.add('active');
+                gsap.set(pages[currentPage], { autoAlpha: 1, y: 0, scale: 1 });
+                updateNavUI();
+            }
+
+            function checkIntersectionForFinalLetter() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+
+                document.querySelectorAll('.fade-text').forEach(text => {
+                    observer.observe(text);
+                });
+            }
+
+            // 1. Food Rain
+            const foodBtn = document.getElementById('food-btn');
+            foodBtn.addEventListener('click', () => {
+                if(synth) synth.triggerAttackRelease(["C5", "E5", "G5"], "0.1");
+                foodBtn.textContent = "DROPPING CHICKEN...";
+                foodBtn.disabled = true;
+                for(let i=0; i<35; i++) {
+                    setTimeout(() => {
+                        const item = document.createElement('div');
+                        item.classList.add('food-item');
+                        item.textContent = ['🍗', '🐔', '🍗', '🍟', '🔥'][Math.floor(Math.random() * 5)];
+                        item.style.left = `${Math.random() * 100}vw`;
+                        item.style.animationDuration = `${Math.random() * 2 + 1.5}s`;
+                        document.body.appendChild(item);
+                        setTimeout(() => item.remove(), 4000);
+                    }, i * 80);
+                }
+                setTimeout(() => { 
+                    foodBtn.textContent = "🍗 Feed Raghav"; 
+                    foodBtn.disabled = false;
+                }, 3500);
+            });
+
+            // 2. 3D Card Hover
+            const card = document.getElementById('fifa-card');
+            const cardGlare = document.getElementById('card-glare');
+            if (card) {
+                card.addEventListener('mousemove', handleCardMove);
+                card.addEventListener('mouseleave', resetCard);
+                card.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    handleCardMove(e.touches[0]);
+                }, {passive: false});
+                card.addEventListener('touchend', resetCard);
+
+                function handleCardMove(e) {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    const rotateX = ((y - centerY) / centerY) * -12; 
+                    const rotateY = ((x - centerX) / centerX) * 12;
+                    
+                    const glareX = (x / rect.width) * 100;
+                    const glareY = (y / rect.height) * 100;
+
+                    gsap.set(card, { transformPerspective: 1000 });
+                    gsap.to(card, { rotationX: rotateX, rotationY: rotateY, ease: "power2.out", duration: 0.1 });
+                    gsap.to(cardGlare, { background: `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.2) 0%, transparent 60%)`, opacity: 1, duration: 0.1 });
+                }
+
+                function resetCard() {
+                    gsap.to(card, { rotationX: 0, rotationY: 0, ease: "elastic.out(1, 0.5)", duration: 1 });
+                    gsap.to(cardGlare, { opacity: 0, duration: 0.5 });
+                }
+            }
+
+            const delusionBtn = document.getElementById('delusion-scanner-btn');
+            if (delusionBtn) {
+                delusionBtn.addEventListener('click', () => {
+                    delusionBtn.innerText = "[ SCANNING BRAIN... ]";
+                    delusionBtn.classList.add('animate-pulse');
+                    if(varSynth) varSynth.triggerAttackRelease("C4", "1.5");
+                    setTimeout(() => {
+                        delusionBtn.innerText = "[ SCAN DELUSION LEVELS ]";
+                        delusionBtn.classList.remove('animate-pulse');
+                        showPopup('SCAN COMPLETE', 'ERROR: Delusion levels unreadable. Subject genuinely thinks he can win an argument against Anshita.', '💀', 'bg-gray-900 border-red-500');
+                        if(hitSynth) hitSynth.triggerAttackRelease("G2", "0.2");
+                    }, 1500);
+                });
+            }
+            
+            const flirtStat = document.getElementById('flirt-stat');
+            if (flirtStat) {
+                flirtStat.addEventListener('click', () => {
+                    showPopup('FACT CHECK', "Yes, I know you love me. You're obsessed. 😘💋", '💅', 'bg-pink-900 border-pink-500');
+                    if(synth) synth.triggerAttackRelease(["E5", "G5", "C6"], "0.3");
+                });
+            }
+
+            // 3. Make a Wish
+            const flame = document.getElementById('candle-flame');
+            if (flame) {
+                flame.addEventListener('click', () => {
+                    gsap.to(flame, { opacity: 0, scale: 0, y: -20, duration: 0.3, ease: "power2.in" });
+                    if(synth) synth.triggerAttackRelease("C2", "0.3");
+                    
+                    setTimeout(() => {
+                        showPopup('WISH DENIED', 'You already have me in your life. What more could you possibly wish for? 💅', '👑', 'bg-purple-900 border-purple-500');
+                        const text = document.getElementById('candle-text');
+                        if(text) {
+                            text.textContent = "Wish rejected. Egos colliding.";
+                            text.classList.replace('text-gray-400', 'text-red-500');
+                        }
+                    }, 400);
+                });
+            }
+
+            // 4. Combat System
+            let health = 80;
+            const healthBar = document.getElementById('health-bar-fill');
+            const healthText = document.getElementById('health-text');
+            const damageBtn = document.getElementById('damage-btn');
+            const healBtn = document.getElementById('heal-btn');
+            
+            if (damageBtn) {
+                damageBtn.addEventListener('click', () => {
+                    if (health <= 0) return showPopup('ACHIEVEMENT', 'He is already dead. You won.', '🏆', 'bg-yellow-900 border-yellow-500');
+                    health -= 15; if (health < 0) health = 0;
+                    
+                    healthBar.style.width = `${health}%`;
+                    healthText.textContent = `${health} / 100 HP`;
+                    
+                    gsap.fromTo(pages[currentPage].querySelector('.glass-panel'), 
+                        { x: -15, rotate: -2 }, { x: 15, rotate: 2, duration: 0.05, yoyo: true, repeat: 5, onComplete: () => gsap.set(pages[currentPage].querySelector('.glass-panel'), {x:0, rotate: 0}) }
+                    );
+                    if(hitSynth) hitSynth.triggerAttackRelease("C2", "0.1");
+                    
+                    if (health <= 20) {
+                        healthBar.classList.replace('from-red-600', 'from-red-800');
+                        healthBar.classList.replace('to-green-500', 'to-red-600');
+                        healthBar.classList.replace('via-orange-500', 'via-red-700');
+                    }
+                    if (health === 0) showPopup('FATALITY', 'Raghav deployed Shinchan Giggle to avoid further damage.', '🤡', 'bg-black border-brandNeon');
+                });
+            }
+
+            if (healBtn) {
+                healBtn.addEventListener('click', () => {
+                    if (health >= 100) return showPopup('HEALED', "Couldn't stay mad at him for long, could you? 😘💋", '💖', 'bg-pink-900 border-pink-500');
+                    health += 25; if (health > 100) health = 100;
+                    
+                    healthBar.style.width = `${health}%`;
+                    healthText.textContent = `${health} / 100 HP`;
+                    
+                    healthBar.classList.replace('from-red-800', 'from-red-600');
+                    healthBar.classList.replace('to-red-600', 'to-green-500');
+                    healthBar.classList.replace('via-red-700', 'via-orange-500');
+                    
+                    for(let i=0; i<20; i++) {
+                        setTimeout(() => {
+                            const item = document.createElement('div');
+                            item.classList.add('click-particle');
+                            item.textContent = ['😘', '💋', '💖'][Math.floor(Math.random() * 3)];
+                            item.style.left = `${Math.random() * 100}vw`;
+                            item.style.top = `${Math.random() * 100}vh`;
+                            item.style.fontSize = `${Math.random() * 2 + 2}rem`;
+                            document.body.appendChild(item);
+                            setTimeout(() => item.remove(), 1000);
+                        }, i * 50);
+                    }
+                });
+            }
+
+            // 5. VAR System
+            const varBtn = document.getElementById('start-var-btn'), varScreen = document.getElementById('var-screen');
+            const varProcessing = document.getElementById('var-processing'), varResult = document.getElementById('var-result');
+            const varStatusText = document.getElementById('var-status-text');
+            const varSubText = document.getElementById('var-sub-text');
+            const resetVarBtn = document.getElementById('reset-var-btn');
+            
+            const varPhases = [
+                { main: "ANALYZING TEXTS...", sub: "Reading through deleted messages..." },
+                { main: "CHECKING LOGIC...", sub: "Error: No logic found in subject's brain." },
+                { main: "REVIEWING FOOTBALL TAKES...", sub: "Detecting highly delusional ball knowledge." },
+                { main: "FINALIZING VERDICT...", sub: "Consulting reality..." }
+            ];
+
+            if (varBtn) {
+                varBtn.addEventListener('click', () => {
+                    varScreen.classList.add('hidden'); 
+                    varProcessing.classList.remove('hidden');
+                    document.getElementById('var-progress').style.width = "0%";
+                    
+                    if(varSynth) varSynth.triggerAttackRelease("C4", "4");
+                    
+                    setTimeout(() => { document.getElementById('var-progress').style.width = "100%"; }, 50);
+
+                    let phaseIndex = 0;
+                    const phaseInterval = setInterval(() => {
+                        phaseIndex++;
+                        if(phaseIndex < varPhases.length) {
+                            varStatusText.textContent = varPhases[phaseIndex].main;
+                            varStatusText.setAttribute('data-text', varPhases[phaseIndex].main);
+                            varSubText.textContent = varPhases[phaseIndex].sub;
+                        } else {
+                            clearInterval(phaseInterval);
+                        }
+                    }, 1000);
+
+                    setTimeout(() => {
+                        varProcessing.classList.add('hidden'); 
+                        varResult.classList.remove('hidden');
+                        if(synth) synth.triggerAttackRelease(["C6", "E6"], "0.2");
+                        gsap.fromTo(varResult.parentElement, {x: -20}, {x: 20, duration: 0.1, yoyo: true, repeat: 5, onComplete: () => gsap.set(varResult.parentElement, {x:0})});
+                    }, 4000);
+                });
+            }
+            
+            if (resetVarBtn) {
+                resetVarBtn.addEventListener('click', () => {
+                    varResult.classList.add('hidden'); 
+                    varScreen.classList.remove('hidden');
+                    document.getElementById('var-progress').style.width = "0%";
+                    varStatusText.textContent = varPhases[0].main;
+                    varStatusText.setAttribute('data-text', varPhases[0].main);
+                    varSubText.textContent = varPhases[0].sub;
+                });
+            }
+
+            // 6. Excuse Generator
+            const excuseBtn = document.getElementById('generate-excuse-btn'), excuseDisplay = document.getElementById('excuse-display');
+            const excuses = [
+                "I didn't even do anything! 🥺", 
+                "Bro, chill... let's just order food.", 
+                "It was a joke! Stop being so serious.", 
+                "*Giggles helplessly*", 
+                "My logic was completely right though!",
+                "I didn't see the text, I was eating.",
+                "The ref was obviously paid!",
+                "I replied in my head and forgot to type it.",
+                "You're just trying to start a fight. 🙄"
+            ];
+            
+            if (excuseBtn) {
+                excuseBtn.addEventListener('click', () => {
+                    excuseBtn.disabled = true;
+                    excuseBtn.classList.add('opacity-50');
+                    let ticks = 0;
+                    const interval = setInterval(() => {
+                        excuseDisplay.textContent = excuses[Math.floor(Math.random() * excuses.length)];
+                        if(hitSynth) hitSynth.triggerAttackRelease("C4", "0.05");
+                        ticks++;
+                        if (ticks > 15) {
+                            clearInterval(interval);
+                            excuseBtn.disabled = false;
+                            excuseBtn.classList.remove('opacity-50');
+                            if(synth) synth.triggerAttackRelease("G4", "0.1");
+                            gsap.fromTo(excuseDisplay, {scale: 1.1, color: "#fff"}, {scale: 1, color: "#D6C0B3", duration: 0.5});
+                        }
+                    }, 80);
+                });
+            }
+
+            // 7. Impossible Checkbox
+            const checkbox = document.getElementById('impossible-checkbox');
+            const taunt = document.getElementById('checkbox-taunt');
+            const taunts = ["Nice try.", "Ego too big?", "Just admit it.", "Embarrassing.", "You can't do it."];
+            
+            function moveCheckbox() {
+                const x = (Math.random() - 0.5) * 200; 
+                const y = (Math.random() - 0.5) * 60;
+                checkbox.style.transform = `translate(${x}px, ${y}px)`;
+                taunt.textContent = taunts[Math.floor(Math.random() * taunts.length)];
+                taunt.classList.remove('opacity-0');
+            }
+
+            if (checkbox) {
+                checkbox.addEventListener('mouseover', moveCheckbox);
+                checkbox.addEventListener('touchstart', (e) => { e.preventDefault(); moveCheckbox(); }, {passive: false});
+                
+                checkbox.addEventListener('click', function(e) {
+                    e.preventDefault(); this.checked = false;
+                    showPopup('SECURITY ALERT', 'System physically prevents Raghav from admitting defeat. Ego levels are critical.', '🔒', 'bg-gray-900 border-gray-500');
+                });
+            }
+
+            // Final Hug Button
+            const finalHugBtn = document.getElementById('final-hug-btn');
+            if (finalHugBtn) {
+                finalHugBtn.addEventListener('click', () => {
+                    showPopup('HUG DELIVERED', 'Happy Birthday, idiot. 🫂💖', '🎉', 'bg-red-900 border-red-500');
+                    if(synth) synth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "1");
+                    
+                    for(let i=0; i<50; i++) {
+                        setTimeout(() => {
+                            const item = document.createElement('div');
+                            item.classList.add('click-particle');
+                            item.textContent = ['🎉', '💖', '🫂', '🎂', '✨'][Math.floor(Math.random() * 5)];
+                            item.style.left = `${Math.random() * 100}vw`;
+                            item.style.top = `${Math.random() * 100}vh`;
+                            item.style.fontSize = `${Math.random() * 2 + 2}rem`;
+                            document.body.appendChild(item);
+                            setTimeout(() => item.remove(), 1500);
+                        }, i * 30);
+                    }
+                });
+            }
+
+            // --- POPUP ENGINE ---
+            const popupOverlay = document.getElementById('global-popup'), popupContainer = document.getElementById('popup-container');
+            function showPopup(title, message, icon, colorClasses) {
+                document.getElementById('popup-title').textContent = title;
+                document.getElementById('popup-message').textContent = message;
+                document.getElementById('popup-icon').textContent = icon;
+                popupContainer.className = `popup-content p-8 md:p-10 rounded-3xl max-w-md w-[90%] mx-4 shadow-2xl relative overflow-hidden text-center border-2 ${colorClasses}`;
+                popupOverlay.classList.add('active');
+            }
+            
+            const popupCloseBtn = document.getElementById('popup-close');
+            if (popupCloseBtn) {
+                popupCloseBtn.addEventListener('click', () => popupOverlay.classList.remove('active'));
+            }
+
+            const roasts = [
+                { t: "SHINCHAN ALERT", m: "Subject observed giggling for absolutely no reason.", i: "🤡", c: "bg-black border-brandNeon" },
+                { t: "CHICKEN DEFICIENCY", m: "Stop thinking about chicken legs.", i: "🍗", c: "bg-orange-900 border-orange-500" },
+                { t: "FACT CHECK", m: "I know you love me. Stop hiding it. 😘", i: "💋", c: "bg-pink-900 border-pink-500" },
+                { t: "SYSTEM NOTE", m: "You are literally obsessed with me. It's so obvious. 💅", i: "🙄", c: "bg-purple-900 border-purple-500" },
+                { t: "DELUSION LEVELS PEAKING", m: "You really thought you could play victim in front of me?", i: "💀", c: "bg-red-900 border-red-500" }
+            ];
+            function startRandomPopups() {
+                setInterval(() => {
+                    if (Math.random() > 0.6 && !popupOverlay.classList.contains('active') && currentPage !== totalPages - 1) {
+                        const r = roasts[Math.floor(Math.random() * roasts.length)];
+                        showPopup(r.t, r.m, r.i, r.c);
+                        if(synth) synth.triggerAttackRelease("C5", "0.1");
+                    }
+                }, 35000); 
+            }
+
+            // --- DRAGGABLE STICKY NOTES ---
+            let isDragging = false, currentDrag = null, initialX, initialY, startX, startY;
+            document.querySelectorAll('.sticky-note').forEach(note => {
+                note.addEventListener('mousedown', dragStart); note.addEventListener('touchstart', dragStart, {passive: false});
+            });
+            function dragStart(e) {
+                if (e.target.classList.contains('sticky-pin')) return;
+                currentDrag = this; isDragging = true;
+                if (e.type === "touchstart") { startX = e.touches[0].clientX; startY = e.touches[0].clientY; } 
+                else { startX = e.clientX; startY = e.clientY; }
+                initialX = parseFloat(window.getComputedStyle(currentDrag).left) || 0;
+                initialY = parseFloat(window.getComputedStyle(currentDrag).top) || 0;
+                document.addEventListener('mousemove', drag); document.addEventListener('touchmove', drag, {passive: false});
+                document.addEventListener('mouseup', dragEnd); document.addEventListener('touchend', dragEnd);
+            }
+            function drag(e) {
+                if (!isDragging) return; e.preventDefault();
+                let cX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+                let cY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+                currentDrag.style.left = `${initialX + (cX - startX)}px`;
+                currentDrag.style.top = `${initialY + (cY - startY)}px`;
+            }
+            function dragEnd() {
+                isDragging = false; currentDrag = null;
+                document.removeEventListener('mousemove', drag); document.removeEventListener('touchmove', drag);
+                document.removeEventListener('mouseup', dragEnd); document.removeEventListener('touchend', dragEnd);
+            }
+        });
+    </script>
+</body>
+</html>
